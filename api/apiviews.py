@@ -2,19 +2,18 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
-from rest_framework_jwt.settings import api_settings
+from rest_framework_simplejwt.settings import api_settings
 from rest_framework import permissions
 from rest_framework import status
+from rest_framework_simplejwt.tokens import AccessToken
 
 from .serializers import TokenSerializer
 from secure_server.decorators import reqid_check_exempt
 
-jwt_payload_default_handler = api_settings.JWT_PAYLOAD_HANDLER
-jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
-
 
 def jwt_payload_handler(user):
-    payload = jwt_payload_default_handler(user)
+    token = AccessToken.for_user(user)
+    payload = token.payload
 
     payload['customField'] = 'custom value'
 
@@ -36,7 +35,7 @@ class LoginAPI(APIView):
             login(request, user)
 
             serializer = TokenSerializer(data={
-                "token": jwt_encode_handler(
+                "token": str(
                     jwt_payload_handler(user)
                 )})
             serializer.is_valid()
